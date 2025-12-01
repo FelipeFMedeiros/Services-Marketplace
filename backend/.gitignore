@@ -8,6 +8,9 @@ yarn-error.log*
 dist/
 build/
 
+# Uploads (arquivos temporários antes do upload para Cloudinary)
+uploads/
+
 # Environment variables
 .env
 .env.local
