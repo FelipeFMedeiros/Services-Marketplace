@@ -1,12 +1,24 @@
 import { PrismaClient } from '../src/generated/prisma';
+import { hashPassword } from '../src/utils/password';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
-  // Limpar dados existentes
-  await prisma.serviceType.deleteMany(); // NÃO RODAR EM PRODUÇÃO
+  // Limpar dados existentes (NÃO RODAR EM PRODUÇÃO)
+  await prisma.review.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.booking.deleteMany();
+  await prisma.serviceVariation.deleteMany();
+  await prisma.servicePhoto.deleteMany();
+  await prisma.service.deleteMany();
+  await prisma.providerAvailability.deleteMany();
+  await prisma.provider.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.serviceType.deleteMany();
+
+  console.log('🗑️  Dados antigos removidos');
 
   // Criar tipos de serviço globais
   const serviceTypes = [
@@ -60,24 +72,29 @@ async function main() {
 
   console.log(`✅ ${serviceTypes.length} tipos de serviço criados!`);
 
+  // Gerar hashes reais para as senhas
+  const adminPasswordHash = await hashPassword('admin123');
+  const providerPasswordHash = await hashPassword('senha123');
+  const clientPasswordHash = await hashPassword('senha123');
+
   // Criar usuário ADMIN de exemplo
   const adminUser = await prisma.user.create({
     data: {
       name: 'Administrador',
       email: 'admin@marketplace.com',
-      password_hash: '$2a$10$XqJQ9Z8Z8Z8Z8Z8Z8Z8Z8u', // Senha: admin123
+      password_hash: adminPasswordHash,
       role: 'ADMIN'
     }
   });
 
-  console.log(`✅ Usuário admin criado: ${adminUser.email}`);
+  console.log(`✅ Usuário admin criado: ${adminUser.email} (senha: admin123)`);
 
   // Criar usuário PRESTADOR de exemplo
   const providerUser = await prisma.user.create({
     data: {
       name: 'Maria Silva',
       email: 'maria@exemplo.com',
-      password_hash: '$2a$10$XqJQ9Z8Z8Z8Z8Z8Z8Z8Z8u', // Senha: senha123
+      password_hash: providerPasswordHash,
       phone: '11999999999',
       role: 'PROVIDER'
     }
@@ -93,7 +110,7 @@ async function main() {
     }
   });
 
-  console.log(`✅ Prestador criado: ${providerUser.name}`);
+  console.log(`✅ Prestador criado: ${providerUser.name} (senha: senha123)`);
 
   // Criar serviço de exemplo
   const belezaType = await prisma.serviceType.findFirst({
@@ -143,13 +160,13 @@ async function main() {
     data: {
       name: 'João Santos',
       email: 'joao@exemplo.com',
-      password_hash: '$2a$10$XqJQ9Z8Z8Z8Z8Z8Z8Z8Z8u', // Senha: senha123
+      password_hash: clientPasswordHash,
       phone: '11988888888',
       role: 'CLIENT'
     }
   });
 
-  console.log(`✅ Cliente criado: ${clientUser.name}`);
+  console.log(`✅ Cliente criado: ${clientUser.name} (senha: senha123)`);
 
   console.log('\n🎉 Seed concluído com sucesso!');
 }
