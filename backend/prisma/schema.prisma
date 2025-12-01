@@ -7,3 +7,276 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// USUÁRIOS E AUTENTICAÇÃO
+// ============================================
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  password_hash String    @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  role          UserRole  @default(CLIENT)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relações
+  provider      Provider?
+  bookings      Booking[] @relation("ClientBookings")
+  reviews       Review[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  CLIENT
+  PROVIDER
+  ADMIN
+}
+
+// ============================================
+// PRESTADORES DE SERVIÇO
+// ============================================
+
+model Provider {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  bio        String?  @db.Text
+  document   String?  @db.VarChar(20) // CPF/CNPJ
+  city       String?  @db.VarChar(100)
+  state      String?  @db.VarChar(2)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relações
+  user            User                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  services        Service[]
+  availabilities  ProviderAvailability[]
+  bookings        Booking[]               @relation("ProviderBookings")
+  notifications   Notification[]
+
+  @@index([user_id])
+  @@index([city, state])
+  @@map("providers")
+}
+
+// ============================================
+// TIPOS DE SERVIÇO (Lista Global)
+// ============================================
+
+model ServiceType {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  // Relações
+  services Service[]
+
+  @@index([name])
+  @@map("service_types")
+}
+
+// ============================================
+// SERVIÇOS
+// ============================================
+
+model Service {
+  id              Int      @id @default(autoincrement())
+  provider_id     Int
+  service_type_id Int
+  title           String   @db.VarChar(255)
+  description     String?  @db.Text
+  is_active       Boolean  @default(true)
+  is_multiday     Boolean  @default(false) // Para serviços que duram vários dias
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relações
+  provider    Provider           @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+  serviceType ServiceType        @relation(fields: [service_type_id], references: [id])
+  photos      ServicePhoto[]
+  variations  ServiceVariation[]
+  bookings    Booking[]
+  reviews     Review[]
+
+  @@index([provider_id])
+  @@index([service_type_id])
+  @@index([is_active])
+  @@map("services")
+}
+
+// ============================================
+// FOTOS DOS SERVIÇOS
+// ============================================
+
+model ServicePhoto {
+  id         Int      @id @default(autoincrement())
+  service_id Int
+  url        String   @db.VarChar(500)
+  is_cover   Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  // Relações
+  service Service @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  @@index([service_id])
+  @@map("service_photos")
+}
+
+// ============================================
+// VARIAÇÕES DE SERVIÇO (Preços e Durações)
+// ============================================
+
+model ServiceVariation {
+  id               Int      @id @default(autoincrement())
+  service_id       Int
+  name             String   @db.VarChar(255)
+  price            Decimal  @db.Decimal(10, 2)
+  duration_minutes Int
+  is_active        Boolean  @default(true)
+  
+  // Descontos em dias específicos (extra)
+  discount_percentage Decimal? @db.Decimal(5, 2) // Ex: 10.00 para 10%
+  discount_days       String?  @db.VarChar(50)   // Ex: "monday,friday" ou "2025-12-25"
+  
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relações
+  service  Service   @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([service_id])
+  @@index([is_active])
+  @@map("service_variations")
+}
+
+// ============================================
+// DISPONIBILIDADES DO PRESTADOR
+// ============================================
+
+model ProviderAvailability {
+  id             Int      @id @default(autoincrement())
+  provider_id    Int
+  start_datetime DateTime
+  end_datetime   DateTime
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Relações
+  provider Provider @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+
+  @@index([provider_id])
+  @@index([start_datetime, end_datetime])
+  @@map("provider_availabilities")
+}
+
+// ============================================
+// RESERVAS/CONTRATAÇÕES
+// ============================================
+
+model Booking {
+  id                   Int       @id @default(autoincrement())
+  client_id            Int
+  provider_id          Int
+  service_id           Int
+  service_variation_id Int
+  start_datetime       DateTime
+  end_datetime         DateTime
+  price_at_booking     Decimal   @db.Decimal(10, 2)
+  status               BookingStatus @default(APPROVED)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  cancelled_at         DateTime?
+  cancellation_reason  String?   @db.Text
+
+  // Relações
+  client           User             @relation("ClientBookings", fields: [client_id], references: [id])
+  provider         Provider         @relation("ProviderBookings", fields: [provider_id], references: [id])
+  service          Service          @relation(fields: [service_id], references: [id])
+  serviceVariation ServiceVariation @relation(fields: [service_variation_id], references: [id])
+  notifications    Notification[]
+  review           Review?
+
+  @@index([client_id])
+  @@index([provider_id])
+  @@index([service_id])
+  @@index([start_datetime, end_datetime])
+  @@index([status])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  CANCELLED
+  COMPLETED
+}
+
+// ============================================
+// NOTIFICAÇÕES
+// ============================================
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  provider_id Int
+  booking_id  Int
+  type        NotificationType
+  message     String   @db.Text
+  is_read     Boolean  @default(false)
+  
+  // Notificações externas (extra)
+  email_sent      Boolean  @default(false)
+  whatsapp_sent   Boolean  @default(false)
+  telegram_sent   Boolean  @default(false)
+  
+  created_at  DateTime @default(now())
+
+  // Relações
+  provider Provider @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+  booking  Booking  @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([provider_id])
+  @@index([booking_id])
+  @@index([is_read])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  NEW_BOOKING
+  BOOKING_CANCELLED
+  BOOKING_REMINDER
+  REVIEW_RECEIVED
+}
+
+// ============================================
+// AVALIAÇÕES (EXTRA)
+// ============================================
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  booking_id Int      @unique
+  client_id  Int
+  service_id Int
+  rating     Int      // 1-5 estrelas
+  comment    String?  @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relações
+  booking Booking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  client  User    @relation(fields: [client_id], references: [id])
+  service Service @relation(fields: [service_id], references: [id])
+
+  @@index([service_id])
+  @@index([client_id])
+  @@index([rating])
+  @@map("reviews")
+}
