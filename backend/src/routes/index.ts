@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import authRoutes from './auth';
+import { generalLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
 // Rotas de autenticação
 router.use('/auth', authRoutes);
 
-// Rota de teste
-router.get('/', (req, res) => {
+// Rota raiz para checagem rápida da API
+router.get('/', generalLimiter, (req, res) => {
   res.json({
     message: 'API Services Marketplace está funcionando!',
     version: '1.0.0',
@@ -25,18 +26,6 @@ router.get('/', (req, res) => {
         logout: 'POST /api/auth/logout',
         me: 'GET /api/auth/me'
       }
-    }
-  });
-});
-
-// Rota de exemplo
-router.get('/test', (req, res) => {
-  res.json({
-    message: 'Rota de teste funcionando!',
-    timestamp: new Date().toISOString(),
-    data: {
-      status: 'success',
-      environment: process.env.NODE_ENV || 'development'
     }
   });
 });
