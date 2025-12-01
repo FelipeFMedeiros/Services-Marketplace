@@ -10,6 +10,9 @@ import { apiReference } from '@scalar/express-api-reference';
 // Carregar variáveis de ambiente
 dotenv.config();
 
+// Inicializar Redis (conecta automaticamente)
+import './config/redis';
+
 // Import das rotas
 import apiRoutes from './routes/index';
 import { swaggerSpec } from './config/swagger';

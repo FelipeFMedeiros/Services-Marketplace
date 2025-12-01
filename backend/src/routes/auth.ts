@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { register, login, logout, getMe } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
+import { authLimiter, meLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -71,7 +72,7 @@ const router = Router();
  *       409:
  *         description: Email já cadastrado
  */
-router.post('/register', register);
+router.post('/register', authLimiter, register);
 
 /**
  * @openapi
@@ -125,7 +126,7 @@ router.post('/register', register);
  *       401:
  *         description: Email ou senha incorretos
  */
-router.post('/login', login);
+router.post('/login', authLimiter, login);
 
 /**
  * @openapi
@@ -150,7 +151,7 @@ router.post('/login', login);
  *                   type: string
  *                   example: Logout realizado com sucesso!
  */
-router.post('/logout', logout);
+router.post('/logout', authLimiter, logout);
 
 /**
  * @openapi
@@ -189,6 +190,6 @@ router.post('/logout', logout);
  *       404:
  *         description: Usuário não encontrado
  */
-router.get('/me', authenticate, getMe);
+router.get('/me', meLimiter, authenticate, getMe);
 
 export default router;
