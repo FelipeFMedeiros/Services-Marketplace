@@ -139,7 +139,7 @@ router.get(
  *     tags:
  *       - Services
  *     summary: Listar todos os serviços do marketplace
- *     description: Retorna lista paginada de serviços ativos com filtros (rota pública)
+ *     description: Retorna lista paginada de serviços ativos com filtros avançados (rota pública)
  *     parameters:
  *       - in: query
  *         name: serviceTypeId
@@ -166,6 +166,27 @@ router.get(
  *         description: Buscar no nome ou descrição do serviço
  *         example: "corte cabelo"
  *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Preço mínimo (filtra variações)
+ *         example: 50.00
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Preço máximo (filtra variações)
+ *         example: 200.00
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [recent, price_asc, price_desc]
+ *         description: Ordenação (recent = mais recentes, price_asc = menor preço, price_desc = maior preço)
+ *         example: "price_asc"
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -176,7 +197,8 @@ router.get(
  *         schema:
  *           type: integer
  *           default: 20
- *         description: Itens por página (máx 100)
+ *           maximum: 100
+ *         description: Itens por página (máximo 100)
  *     responses:
  *       200:
  *         description: Lista de serviços com paginação
@@ -189,6 +211,20 @@ router.get(
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       title:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       priceRange:
+ *                         type: object
+ *                         properties:
+ *                           min:
+ *                             type: number
+ *                           max:
+ *                             type: number
  *                 pagination:
  *                   type: object
  *                   properties:
@@ -200,10 +236,16 @@ router.get(
  *                       example: 20
  *                     total:
  *                       type: integer
- *                       example: 45
+ *                       example: 150
  *                     totalPages:
  *                       type: integer
- *                       example: 3
+ *                       example: 8
+ *                     hasNext:
+ *                       type: boolean
+ *                       example: true
+ *                     hasPrev:
+ *                       type: boolean
+ *                       example: false
  */
 router.get(
   '/',

@@ -99,11 +99,22 @@ export async function createService(req: Request, res: Response) {
 
 /**
  * GET /api/services
- * Listar todos os serviços ativos do marketplace com filtros
+ * Listar todos os serviços ativos do marketplace com filtros avançados
+ * Filtros: serviceTypeId, city, state, search, minPrice, maxPrice, sortBy
  */
 export async function getAllServices(req: Request, res: Response) {
   try {
-    const { serviceTypeId, city, state, search, page = '1', limit = '20' } = req.query;
+    const { 
+      serviceTypeId, 
+      city, 
+      state, 
+      search, 
+      minPrice, 
+      maxPrice,
+      sortBy = 'recent',
+      page = '1', 
+      limit = '20' 
+    } = req.query;
 
     // Construir filtro
     const where: any = {
@@ -130,9 +141,46 @@ export async function getAllServices(req: Request, res: Response) {
       ];
     }
 
+    // Filtro por faixa de preço (nas variations)
+    if (minPrice || maxPrice) {
+      where.variations = {
+        some: {}
+      };
+      
+      if (minPrice) {
+        where.variations.some.price = { gte: parseFloat(minPrice as string) };
+      }
+      
+      if (maxPrice) {
+        if (!where.variations.some.price) {
+          where.variations.some.price = {};
+        }
+        where.variations.some.price.lte = parseFloat(maxPrice as string);
+      }
+    }
+
+    // Definir ordenação
+    let orderBy: any = { created_at: 'desc' }; // Default: mais recentes
+    
+    switch (sortBy) {
+      case 'price_asc':
+        // Ordenar por menor preço (da menor variação)
+        orderBy = { variations: { _min: { price: 'asc' } } };
+        break;
+      case 'price_desc':
+        // Ordenar por maior preço (da maior variação)
+        orderBy = { variations: { _max: { price: 'desc' } } };
+        break;
+      case 'recent':
+        orderBy = { created_at: 'desc' };
+        break;
+      default:
+        orderBy = { created_at: 'desc' };
+    }
+
     // Paginação
     const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const limitNum = Math.min(parseInt(limit as string), 100); // Máximo 100 por página
     const skip = (pageNum - 1) * limitNum;
 
     // Buscar serviços com contagem total
@@ -159,8 +207,7 @@ export async function getAllServices(req: Request, res: Response) {
           variations: {
             orderBy: {
               price: 'asc'
-            },
-            take: 1 // Mostrar só a variação mais barata
+            }
           },
           photos: {
             where: {
@@ -175,22 +222,34 @@ export async function getAllServices(req: Request, res: Response) {
             }
           }
         },
-        orderBy: {
-          created_at: 'desc'
-        },
+        orderBy,
         skip,
         take: limitNum
       }),
       prisma.service.count({ where })
     ]);
 
+    // Adicionar informação de preço mínimo/máximo para cada serviço
+    const servicesWithPriceRange = services.map(service => {
+      const prices = service.variations.map(v => v.price.toNumber());
+      return {
+        ...service,
+        priceRange: prices.length > 0 ? {
+          min: Math.min(...prices),
+          max: Math.max(...prices)
+        } : null
+      };
+    });
+
     return res.json({
-      services,
+      services: servicesWithPriceRange,
       pagination: {
         page: pageNum,
         limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limitNum)
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum < Math.ceil(total / limitNum),
+        hasPrev: pageNum > 1
       }
     });
 

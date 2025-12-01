@@ -43,6 +43,7 @@ router.get('/', generalLimiter, (req, res) => {
         getById: 'GET /api/service-types/:id'
       },
       providers: {
+        search: 'GET /api/providers/search (público, filtros: city, state, serviceTypeId, search, sortBy)',
         updateProfile: 'PUT /api/providers/profile',
         getById: 'GET /api/providers/:id',
         availabilities: {
@@ -55,7 +56,7 @@ router.get('/', generalLimiter, (req, res) => {
       },
       services: {
         create: 'POST /api/services',
-        list: 'GET /api/services (público, com filtros)',
+        list: 'GET /api/services (público, filtros: serviceTypeId, city, state, search, minPrice, maxPrice, sortBy)',
         my: 'GET /api/services/my (PROVIDER)',
         getById: 'GET /api/services/:id',
         update: 'PUT /api/services/:id',

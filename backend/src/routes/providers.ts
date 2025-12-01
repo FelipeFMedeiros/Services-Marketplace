@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { updateProviderProfile, getProviderById } from '../controllers/providerController';
+import { updateProviderProfile, getProviderById, searchProviders } from '../controllers/providerController';
 import {
   createAvailability,
   getMyAvailabilities,
@@ -68,6 +68,137 @@ const router = Router();
  *         description: Perfil não encontrado
  */
 router.put('/profile', authenticate, authorize('PROVIDER'), createLimiter, updateProviderProfile);
+
+/**
+ * @openapi
+ * /api/providers/search:
+ *   get:
+ *     tags:
+ *       - Providers
+ *     summary: Buscar prestadores (público)
+ *     description: Busca prestadores com filtros de localização, tipo de serviço e ordenação
+ *     parameters:
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: Filtrar por cidade
+ *         example: "São Paulo"
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: Filtrar por estado (sigla)
+ *         example: "SP"
+ *       - in: query
+ *         name: serviceTypeId
+ *         schema:
+ *           type: integer
+ *         description: Filtrar prestadores que oferecem este tipo de serviço
+ *         example: 1
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar por nome do prestador ou bio
+ *         example: "manicure"
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [services_count, recent]
+ *         description: Ordenação (services_count = mais serviços, recent = mais recentes)
+ *         example: "services_count"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *         description: Itens por página (máximo 100)
+ *     responses:
+ *       200:
+ *         description: Lista de prestadores
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     providers:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
+ *                         hasNext:
+ *                           type: boolean
+ *                         hasPrev:
+ *                           type: boolean
+ */
+router.get('/search', generalLimiter, searchProviders);
+
+/**
+ * @openapi
+ * /api/providers/{id}:
+ *   get:
+ *     tags:
+ *       - Providers
+ *     summary: Buscar perfil público de prestador
+ *     description: Retorna informações públicas de um prestador e seus serviços
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do prestador
+ *     responses:
+ *       200:
+ *         description: Dados do prestador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     provider:
+ *                       allOf:
+ *                         - $ref: '#/components/schemas/Provider'
+ *                         - type: object
+ *                           properties:
+ *                             services:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *       404:
+ *         description: Prestador não encontrado
+ */
+router.get('/:id', generalLimiter, getProviderById);
 
 // ============================================
 // PROVIDER AVAILABILITIES ROUTES
