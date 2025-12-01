@@ -44,7 +44,14 @@ router.get('/', generalLimiter, (req, res) => {
       },
       providers: {
         updateProfile: 'PUT /api/providers/profile',
-        getById: 'GET /api/providers/:id'
+        getById: 'GET /api/providers/:id',
+        availabilities: {
+          create: 'POST /api/providers/availabilities',
+          list: 'GET /api/providers/availabilities (PROVIDER)',
+          update: 'PUT /api/providers/availabilities/:id',
+          delete: 'DELETE /api/providers/availabilities/:id',
+          getSlots: 'GET /api/providers/:id/available-slots (público)'
+        }
       },
       services: {
         create: 'POST /api/services',
