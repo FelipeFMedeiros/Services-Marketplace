@@ -11,6 +11,11 @@ router.get('/', (req, res) => {
   res.json({
     message: 'API Services Marketplace está funcionando!',
     version: '1.0.0',
+    documentation: {
+      swagger: 'http://localhost:3000/api-docs',
+      scalar: 'http://localhost:3000/docs',
+      json: 'http://localhost:3000/api-docs.json'
+    },
     endpoints: {
       health: '/health',
       api: '/api',

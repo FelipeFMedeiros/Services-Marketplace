@@ -4,18 +4,23 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
+import { apiReference } from '@scalar/express-api-reference';
 
 // Carregar variáveis de ambiente
 dotenv.config();
 
 // Import das rotas
 import apiRoutes from './routes/index';
+import { swaggerSpec } from './config/swagger';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false // Desabilitar CSP para Swagger/Scalar funcionar
+}));
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
@@ -24,6 +29,25 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Documentação da API
+// Swagger UI (interface clássica)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Services Marketplace API Docs'
+}));
+
+// Scalar (interface moderna)
+app.use('/docs', apiReference({
+  content: swaggerSpec,
+  theme: 'purple'
+}));
+
+// Endpoint para obter spec JSON
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Rotas
 app.use('/api', apiRoutes);
