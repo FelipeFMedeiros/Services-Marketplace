@@ -1,0 +1,99 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: services-marketplace-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: services_marketplace
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev_password
+    ports:
+      - "3307:3306"   # Para o mysql
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - services-marketplace-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: services-marketplace-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - services-marketplace-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: services-marketplace-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - services-marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      timeout: 10s
+      retries: 10
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: services-marketplace-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # Para a API
+      - "5555:5555"   # Para o Prisma Studio
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=admin
+      - DB_NAME=services_marketplace
+      - DATABASE_URL=mysql://root:admin@mysql:3306/services_marketplace
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - services-marketplace-network
+
+volumes:
+  mysql_data:
+  redis_data:
+  elasticsearch_data:
+
+networks:
+  services-marketplace-network:
+    driver: bridge
