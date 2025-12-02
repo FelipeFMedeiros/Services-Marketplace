@@ -18,6 +18,7 @@ export interface User {
 export interface Provider {
     id: number;
     userId: number;
+    name: string;
     bio: string | null;
     rating: number;
     totalReviews: number;

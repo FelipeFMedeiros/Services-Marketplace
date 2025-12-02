@@ -94,7 +94,7 @@ export function Header() {
                                             {/* Dashboard - apenas para providers */}
                                             {isProvider && (
                                                 <Link
-                                                    to="/dashboard"
+                                                    to="/my-bookings-provider"
                                                     className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                                                     onClick={() => setShowDropdown(false)}
                                                 >
@@ -105,7 +105,7 @@ export function Header() {
 
                                             {/* Meus Agendamentos */}
                                             <Link
-                                                to="/bookings"
+                                                to="/my-bookings"
                                                 className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                                                 onClick={() => setShowDropdown(false)}
                                             >
@@ -115,7 +115,7 @@ export function Header() {
 
                                             {isClient && (
                                                 <Link
-                                                    to="/reviews"
+                                                    to="/my-reviews"
                                                     className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                                                     onClick={closeMobileMenu}
                                                 >
@@ -229,7 +229,7 @@ export function Header() {
                                     <nav className="space-y-1">
                                         {isProvider && (
                                             <Link
-                                                to="/dashboard"
+                                                to="/my-bookings-provider"
                                                 className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                                                 onClick={closeMobileMenu}
                                             >
@@ -249,7 +249,7 @@ export function Header() {
                                             </Link>
                                         )}
                                         <Link
-                                            to="/bookings"
+                                            to="/my-bookings"
                                             className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                                             onClick={closeMobileMenu}
                                         >

@@ -7,17 +7,31 @@ import type { Booking } from './bookings';
 
 export interface Availability {
     id: number;
-    providerId: number;
-    dayOfWeek: number; // 0-6 (domingo-sábado)
-    startTime: string; // HH:mm
-    endTime: string; // HH:mm
-    createdAt: string;
-    updatedAt: string;
+    provider_id: number;
+    start_datetime: string; // ISO 8601
+    end_datetime: string;   // ISO 8601
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface AvailableSlot {
-    datetime: string;
-    available: boolean;
+    start: string; // ISO 8601 datetime
+    end: string;   // ISO 8601 datetime
+    durationMinutes: number;
+}
+
+export interface AvailableSlotsResponse {
+    provider: {
+        id: number;
+        name: string;
+    };
+    period: {
+        start: string;
+        end: string;
+    };
+    availableSlots: AvailableSlot[];
+    totalSlots: number;
 }
 
 export interface Notification {
@@ -68,15 +82,14 @@ export interface UpdateProfileRequest {
 }
 
 export interface CreateAvailabilityRequest {
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
+    startDatetime: string; // ISO 8601
+    endDatetime: string;   // ISO 8601
 }
 
 export interface UpdateAvailabilityRequest {
-    dayOfWeek?: number;
-    startTime?: string;
-    endTime?: string;
+    startDatetime?: string; // ISO 8601
+    endDatetime?: string;   // ISO 8601
+    isActive?: boolean;
 }
 
 export interface SearchProvidersParams {
@@ -102,7 +115,16 @@ export interface AvailabilityResponse {
 }
 
 export interface AvailableSlotsResponse {
-    slots: AvailableSlot[];
+    provider: {
+        id: number;
+        name: string;
+    };
+    period: {
+        start: string;
+        end: string;
+    };
+    availableSlots: AvailableSlot[];
+    totalSlots: number;
 }
 
 export interface NotificationsResponse {
@@ -186,7 +208,7 @@ export const providersApi = {
      */
     getAvailableSlots: async (
         providerId: number,
-        params: { startDate: string; endDate: string }
+        params: { startDate: string; endDate: string; durationMinutes?: number }
     ): Promise<AvailableSlotsResponse> => {
         const response = await api.get(`/providers/${providerId}/available-slots`, { params });
         return response.data;

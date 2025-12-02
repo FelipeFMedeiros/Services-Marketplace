@@ -10,6 +10,9 @@ import HomePage from '@/pages/HomePage';
 import BookingsPage from '@/pages/BookingsPage';
 import ServicesPage from '@/pages/ServicesPage';
 import ServiceDetailPage from '@/pages/ServiceDetailPage';
+import MyBookingsPage from '@/pages/MyBookingsPage';
+import MyReviewsPage from '@/pages/MyReviewsPage';
+import ProviderBookingsPage from '@/pages/ProviderBookingsPage';
 
 function App() {
     return (
@@ -40,25 +43,34 @@ function App() {
                             } 
                         />
 
-                        {/* Rotas para implementar depois:
+                        {/* Rotas do Cliente (CLIENT) */}
                         <Route 
-                            path="/dashboard" 
+                            path="/my-bookings" 
                             element={
-                                <ProtectedRoute requireRole="PROVIDER">
-                                    <ProviderDashboard />
+                                <ProtectedRoute requireRole="CLIENT">
+                                    <MyBookingsPage />
                                 </ProtectedRoute>
                             } 
                         />
                         
                         <Route 
-                            path="/profile" 
+                            path="/my-reviews" 
                             element={
-                                <ProtectedRoute>
-                                    <ProfilePage />
+                                <ProtectedRoute requireRole="CLIENT">
+                                    <MyReviewsPage />
                                 </ProtectedRoute>
                             } 
                         />
-                        */}
+
+                        {/* Rotas do Cliente (CLIENT) */}
+                        <Route 
+                            path="/my-bookings-provider" 
+                            element={
+                                <ProtectedRoute requireRole="PROVIDER">
+                                    <ProviderBookingsPage />
+                                </ProtectedRoute>
+                            } 
+                        />
                     </Routes>
                 </div>
             </AuthProvider>

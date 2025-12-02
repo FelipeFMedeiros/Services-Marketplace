@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, Star, Calendar, Loader2 } from 'lucide-react'
 import { servicesApi, reviewsApi, type Service, type Review } from '../data/api';
 import { ServiceGallery } from '../components/features/Services/ServiceGallery';
 import { ServiceReviews } from '../components/features/Services/ServiceReviews';
+import { BookingModal } from '../components/features/Bookings/BookingModal';
 import { useAuth } from '../hooks/useAuth';
 
 type ServiceWithDetails = Service & {
@@ -23,6 +24,7 @@ export default function ServiceDetailPage() {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedVariation, setSelectedVariation] = useState<number | null>(null);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -82,15 +84,22 @@ export default function ServiceDetailPage() {
         if (mins === 0) return `${hours}h`;
         return `${hours}h ${mins}min`;
     };
-
     const handleBooking = () => {
         if (!isAuthenticated) {
             navigate('/login', { state: { from: `/services/${id}` } });
             return;
         }
 
-        // TODO: Implementar fluxo de agendamento
-        console.log('Iniciar agendamento', { serviceId: id, variationId: selectedVariation });
+        if (!selectedVariation) {
+            return;
+        }
+
+        setIsBookingModalOpen(true);
+    };
+
+    const handleBookingSuccess = () => {
+        // Redirecionar para página de agendamentos
+        navigate('/my-bookings');
     };
 
     if (loading) {
@@ -259,15 +268,10 @@ export default function ServiceDetailPage() {
                                                         <div className="font-semibold text-gray-900">
                                                             {variation.name}
                                                         </div>
-                                                        {variation.description && (
-                                                            <p className="text-sm text-gray-600 mt-1">
-                                                                {variation.description}
-                                                            </p>
-                                                        )}
-                                                        {variation.duration && (
+                                                        {variation.duration_minutes && (
                                                             <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
                                                                 <Clock className="w-4 h-4" />
-                                                                <span>{formatDuration(variation.duration)}</span>
+                                                                <span>{formatDuration(variation.duration_minutes)}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -311,16 +315,21 @@ export default function ServiceDetailPage() {
                                     {isAuthenticated ? 'Continuar Agendamento' : 'Fazer Login para Agendar'}
                                 </span>
                             </button>
-
-                            {!isAuthenticated && (
-                                <p className="text-xs text-gray-500 text-center mt-3">
-                                    Você precisa estar logado para agendar este serviço
-                                </p>
-                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Booking Modal */}
+            {selectedVariationData && (
+                <BookingModal
+                    isOpen={isBookingModalOpen}
+                    onClose={() => setIsBookingModalOpen(false)}
+                    service={service}
+                    variation={selectedVariationData}
+                    onSuccess={handleBookingSuccess}
+                />
+            )}
         </div>
     );
 }

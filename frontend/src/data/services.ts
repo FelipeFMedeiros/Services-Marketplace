@@ -6,13 +6,15 @@ import type { Provider } from './auth';
 
 export interface ServiceVariation {
     id: number;
-    serviceId: number;
+    service_id: number;
     name: string;
-    description: string | null;
     price: number;
-    duration: number | null;
-    createdAt: string;
-    updatedAt: string;
+    duration_minutes: number;
+    is_active: boolean;
+    discount_percentage?: number | null;
+    discount_days?: string | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface ServicePhoto {
@@ -28,6 +30,7 @@ export interface ServicePhoto {
 export interface Service {
     id: number;
     name: string;
+    title: string;
     description: string;
     basePrice: number;
     serviceTypeId: number;
@@ -63,16 +66,15 @@ export interface UpdateServiceRequest {
 
 export interface CreateVariationRequest {
     name: string;
-    description?: string;
     price: number;
-    duration?: number;
+    duration_minutes: number;
 }
 
 export interface UpdateVariationRequest {
     name?: string;
-    description?: string;
     price?: number;
-    duration?: number;
+    duration_minutes?: number;
+    isActive?: boolean;
 }
 
 export interface ServicesSearchParams {

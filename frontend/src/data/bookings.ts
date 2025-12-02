@@ -1,6 +1,7 @@
 import api from './api';
 import type { User } from './auth';
 import type { Service, ServiceVariation } from './services';
+import type { Provider } from './auth';
 
 // ===== INTERFACES =====
 
@@ -9,18 +10,27 @@ export type BookingStatus = 'PENDING' | 'APPROVED' | 'COMPLETED' | 'CANCELLED';
 export interface Booking {
     id: number;
     clientId: number;
+    providerId: number;
     serviceId: number;
-    variationId: number | null;
-    scheduledDate: string;
+    serviceVariationId: number;
+    startDatetime: string;
+    endDatetime: string;
+    start_datetime?: string;
+    end_datetime?: string;
+    priceAtBooking: number;
+    price_at_booking?: number;
     status: BookingStatus;
-    totalPrice: number;
-    notes: string | null;
     cancellationReason: string | null;
+    cancellation_reason?: string | null;
     createdAt: string;
     updatedAt: string;
+    created_at?: string;
+    updated_at?: string;
     client?: User;
+    provider?: Provider;
     service?: Service;
-    variation?: ServiceVariation;
+    serviceVariation?: ServiceVariation;
+    service_variation?: ServiceVariation;
     review?: {
         id: number;
         rating: number;
@@ -30,9 +40,8 @@ export interface Booking {
 
 export interface CreateBookingRequest {
     serviceId: number;
-    variationId?: number;
-    scheduledDate: string; // ISO 8601
-    notes?: string;
+    variationId: number;
+    startDatetime: string;
 }
 
 export interface BookingsSearchParams {
@@ -47,6 +56,7 @@ export interface BookingsResponse {
 
 export interface BookingResponse {
     booking: Booking;
+    message?: string;
 }
 
 // ===== BOOKINGS API =====

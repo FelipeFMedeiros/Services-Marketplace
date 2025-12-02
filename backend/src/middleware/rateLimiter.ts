@@ -51,7 +51,7 @@ const createRateLimiter = (options: {
  */
 export const authLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minuto
-  max: 10,
+  max: 1000,
   message: 'Muitas tentativas de autenticação. Tente novamente em 1 minuto.',
   skipSuccessfulRequests: false
 });
@@ -62,7 +62,7 @@ export const authLimiter = createRateLimiter({
  */
 export const meLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minuto
-  max: 25,
+  max: 2500,
   message: 'Muitas requisições. Tente novamente em alguns segundos.'
 });
 
@@ -72,7 +72,7 @@ export const meLimiter = createRateLimiter({
  */
 export const generalLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minuto
-  max: 100,
+  max: 10000,
   message: 'Muitas requisições. Tente novamente em 1 minuto.'
 });
 
@@ -82,7 +82,7 @@ export const generalLimiter = createRateLimiter({
  */
 export const strictLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minuto
-  max: 5,
+  max: 5000,
   message: 'Limite de requisições excedido. Tente novamente em 1 minuto.',
   skipSuccessfulRequests: true // Só conta requisições com erro
 });
@@ -93,6 +93,6 @@ export const strictLimiter = createRateLimiter({
  */
 export const createLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minuto
-  max: 20,
+  max: 2000,
   message: 'Muitas criações em sequência. Aguarde um momento.'
 });

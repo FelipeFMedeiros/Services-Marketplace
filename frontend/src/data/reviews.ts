@@ -7,15 +7,23 @@ import type { Booking } from './bookings';
 export interface Review {
     id: number;
     bookingId: number;
+    booking_id?: number; // Backend compatibility
     clientId: number;
+    client_id?: number; // Backend compatibility
+    serviceId?: number;
+    service_id?: number; // Backend compatibility
     rating: number; // 1-5
     comment: string | null;
     response?: string | null;
     respondedAt?: string | null;
+    responded_at?: string | null; // Backend compatibility
     createdAt: string;
+    created_at?: string; // Backend compatibility
     updatedAt: string;
+    updated_at?: string; // Backend compatibility
     client?: User;
     booking?: Booking;
+    service?: any; // For compatibility with backend response
 }
 
 export interface CreateReviewRequest {
