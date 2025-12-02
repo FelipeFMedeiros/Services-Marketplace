@@ -40,8 +40,11 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
+    success: boolean;
     message: string;
-    user: User;
+    data: {
+        user: User;
+    };
 }
 
 // ===== AUTH API =====
@@ -50,17 +53,17 @@ export const authApi = {
     /**
      * Registrar novo usuário (cliente ou prestador)
      */
-    register: async (data: RegisterRequest): Promise<AuthResponse> => {
+    register: async (data: RegisterRequest): Promise<User> => {
         const response = await api.post('/auth/register', data);
-        return response.data;
+        return response.data.data.user;
     },
 
     /**
      * Fazer login - retorna JWT em httpOnly cookie
      */
-    login: async (data: LoginRequest): Promise<AuthResponse> => {
+    login: async (data: LoginRequest): Promise<User> => {
         const response = await api.post('/auth/login', data);
-        return response.data;
+        return response.data.data.user;
     },
 
     /**
@@ -74,8 +77,8 @@ export const authApi = {
     /**
      * Obter dados do usuário autenticado
      */
-    me: async (): Promise<{ user: User }> => {
+    me: async (): Promise<User> => {
         const response = await api.get('/auth/me');
-        return response.data;
+        return response.data.data.user;
     },
 };

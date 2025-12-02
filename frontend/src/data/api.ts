@@ -35,7 +35,7 @@ export default api;
 // Centralizando todas as importações em um único ponto
 
 export { authApi } from './auth';
-export type { User, Provider, RegisterRequest, LoginRequest, AuthResponse } from './auth';
+export type { User, Provider, RegisterRequest, LoginRequest } from './auth';
 
 export { serviceTypesApi } from './serviceTypes';
 export type { ServiceType, ServiceTypesResponse, ServiceTypeResponse } from './serviceTypes';

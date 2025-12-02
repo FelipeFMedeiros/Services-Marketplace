@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LogIn, Mail, Lock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { authApi } from '@/data/api';
+import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 
 const loginSchema = z.object({
@@ -15,7 +15,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 function Login() {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
     
     const {
         register,
@@ -28,7 +30,7 @@ function Login() {
     const onSubmit = async (data: LoginFormData) => {
         try {
             setErrorMessage('');
-            await authApi.login({ email: data.email, password: data.password });
+            await login(data.email, data.password);
             navigate('/');
         } catch (error: unknown) {
             const axiosError = error as { response?: { data?: { message?: string } } };
@@ -94,13 +96,20 @@ function Login() {
                                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                                 <input
                                     id="password"
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     {...register('password')}
-                                    className={`pl-10 block w-full px-3 py-3 border ${
+                                    className={`pl-10 pr-10 block w-full px-3 py-3 border ${
                                         errors.password ? 'border-red-300' : 'border-gray-300'
                                     } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
                             </div>
                             {errors.password && (
                                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
@@ -122,9 +131,9 @@ function Login() {
                         </div>
 
                         <div className="text-sm">
-                            <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                            <Link to="#" className="font-medium text-blue-600 hover:text-blue-500">
                                 Esqueceu a senha?
-                            </a>
+                            </Link>
                         </div>
                     </div>
 
@@ -143,9 +152,9 @@ function Login() {
                     <div className="text-center">
                         <p className="text-sm text-gray-600">
                             Não tem uma conta?{' '}
-                            <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
                                 Cadastre-se agora
-                            </a>
+                            </Link>
                         </p>
                     </div>
                 </form>

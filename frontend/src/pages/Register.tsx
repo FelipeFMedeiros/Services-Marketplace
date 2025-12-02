@@ -1,21 +1,37 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { UserPlus, Mail, Lock, User, Phone, MapPin, Building2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import {
+    UserPlus,
+    Mail,
+    Lock,
+    User,
+    Phone,
+    MapPin,
+    Building2,
+    ArrowRight,
+    ArrowLeft,
+    Check,
+    Eye,
+    EyeOff,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '@/data/api';
 
 // Schema para Etapa 1 - Informações Básicas
-const step1Schema = z.object({
-    name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-    email: z.string().email('E-mail inválido'),
-    password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-    confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: 'As senhas não coincidem',
-    path: ['confirmPassword'],
-});
+const step1Schema = z
+    .object({
+        name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+        email: z.string().email('E-mail inválido'),
+        password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+        confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: 'As senhas não coincidem',
+        path: ['confirmPassword'],
+    });
 
 // Schema para Etapa 2 - Tipo de Usuário
 const step2Schema = z.object({
@@ -40,6 +56,7 @@ function Register() {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
     const totalSteps = 3;
 
     const {
@@ -62,7 +79,7 @@ function Register() {
 
     const handleNext = async () => {
         let fieldsToValidate: (keyof RegisterFormData)[] = [];
-        
+
         if (currentStep === 1) {
             fieldsToValidate = ['name', 'email', 'password', 'confirmPassword'];
         } else if (currentStep === 2) {
@@ -70,7 +87,7 @@ function Register() {
         }
 
         const isValid = await trigger(fieldsToValidate);
-        
+
         if (isValid && currentStep < totalSteps) {
             setCurrentStep(currentStep + 1);
         }
@@ -112,12 +129,8 @@ function Register() {
                     <div className="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
                         <UserPlus className="h-8 w-8 text-blue-600" />
                     </div>
-                    <h2 className="mt-6 text-3xl font-bold text-gray-900">
-                        Criar nova conta
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Preencha os dados abaixo para começar
-                    </p>
+                    <h2 className="mt-6 text-3xl font-bold text-gray-900">Criar nova conta</h2>
+                    <p className="mt-2 text-sm text-gray-600">Preencha os dados abaixo para começar</p>
                 </div>
 
                 {/* Progress Bar */}
@@ -155,14 +168,12 @@ function Register() {
                             {errorMessage}
                         </div>
                     )}
-                    
+
                     <form onSubmit={handleSubmit(onSubmit)}>
                         {/* Step 1 - Informações Básicas */}
                         {currentStep === 1 && (
                             <div className="space-y-4">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                                    Informações Básicas
-                                </h3>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Informações Básicas</h3>
 
                                 {/* Name */}
                                 <div>
@@ -170,7 +181,10 @@ function Register() {
                                         Nome Completo
                                     </label>
                                     <div className="relative">
-                                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <User
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="name"
                                             type="text"
@@ -181,9 +195,7 @@ function Register() {
                                             placeholder="João Silva"
                                         />
                                     </div>
-                                    {errors.name && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                                    )}
+                                    {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
                                 </div>
 
                                 {/* Email */}
@@ -192,7 +204,10 @@ function Register() {
                                         E-mail
                                     </label>
                                     <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Mail
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="email"
                                             type="email"
@@ -214,16 +229,26 @@ function Register() {
                                         Senha
                                     </label>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Lock
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="password"
-                                            type="password"
+                                            type={showPassword ? 'text' : 'password'}
                                             {...register('password')}
-                                            className={`pl-10 block w-full px-3 py-3 border ${
+                                            className={`pl-10 pr-10 block w-full px-3 py-3 border ${
                                                 errors.password ? 'border-red-300' : 'border-gray-300'
                                             } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                                             placeholder="••••••••"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
                                     </div>
                                     {errors.password && (
                                         <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
@@ -232,20 +257,33 @@ function Register() {
 
                                 {/* Confirm Password */}
                                 <div>
-                                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label
+                                        htmlFor="confirmPassword"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Confirmar Senha
                                     </label>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Lock
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="confirmPassword"
-                                            type="password"
+                                            type={showPassword ? 'text' : 'password'}
                                             {...register('confirmPassword')}
-                                            className={`pl-10 block w-full px-3 py-3 border ${
+                                            className={`pl-10 pr-10 block w-full px-3 py-3 border ${
                                                 errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
                                             } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                                             placeholder="••••••••"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
                                     </div>
                                     {errors.confirmPassword && (
                                         <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
@@ -257,9 +295,7 @@ function Register() {
                         {/* Step 2 - Tipo de Usuário */}
                         {currentStep === 2 && (
                             <div className="space-y-4">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                                    Tipo de Conta
-                                </h3>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Tipo de Conta</h3>
                                 <p className="text-sm text-gray-600 mb-6">
                                     Selecione como você deseja usar a plataforma
                                 </p>
@@ -267,20 +303,13 @@ function Register() {
                                 <div className="grid grid-cols-2 gap-4">
                                     {/* Client */}
                                     <label className="cursor-pointer border-2 rounded-lg p-6 transition-all border-gray-300 hover:border-gray-400 has-checked:border-blue-600 has-checked:bg-blue-50">
-                                        <input
-                                            type="radio"
-                                            value="CLIENT"
-                                            {...register('role')}
-                                            className="sr-only"
-                                        />
+                                        <input type="radio" value="CLIENT" {...register('role')} className="sr-only" />
                                         <div className="text-center">
                                             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3">
                                                 <User className="text-blue-600" size={32} />
                                             </div>
                                             <h4 className="font-semibold text-gray-900 mb-1">Cliente</h4>
-                                            <p className="text-sm text-gray-600">
-                                                Quero contratar serviços
-                                            </p>
+                                            <p className="text-sm text-gray-600">Quero contratar serviços</p>
                                         </div>
                                     </label>
 
@@ -297,9 +326,7 @@ function Register() {
                                                 <Building2 className="text-blue-600" size={32} />
                                             </div>
                                             <h4 className="font-semibold text-gray-900 mb-1">Prestador</h4>
-                                            <p className="text-sm text-gray-600">
-                                                Quero oferecer serviços
-                                            </p>
+                                            <p className="text-sm text-gray-600">Quero oferecer serviços</p>
                                         </div>
                                     </label>
                                 </div>
@@ -312,9 +339,7 @@ function Register() {
                         {/* Step 3 - Informações de Contato */}
                         {currentStep === 3 && (
                             <div className="space-y-4">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                                    Informações de Contato
-                                </h3>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Informações de Contato</h3>
 
                                 {/* Phone */}
                                 <div>
@@ -322,7 +347,10 @@ function Register() {
                                         Telefone
                                     </label>
                                     <div className="relative">
-                                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Phone
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="phone"
                                             type="text"
@@ -349,7 +377,10 @@ function Register() {
                                         Endereço
                                     </label>
                                     <div className="relative">
-                                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <MapPin
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="address"
                                             type="text"
@@ -371,7 +402,10 @@ function Register() {
                                         Cidade
                                     </label>
                                     <div className="relative">
-                                        <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <Building2
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                            size={20}
+                                        />
                                         <input
                                             id="city"
                                             type="text"
@@ -382,9 +416,7 @@ function Register() {
                                             placeholder="São Paulo"
                                         />
                                     </div>
-                                    {errors.city && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-                                    )}
+                                    {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
                                 </div>
                             </div>
                         )}
@@ -429,9 +461,9 @@ function Register() {
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
                             Já tem uma conta?{' '}
-                            <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
                                 Faça login
-                            </a>
+                            </Link>
                         </p>
                     </div>
                 </div>
