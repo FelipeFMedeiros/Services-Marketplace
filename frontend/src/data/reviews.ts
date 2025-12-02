@@ -10,6 +10,8 @@ export interface Review {
     clientId: number;
     rating: number; // 1-5
     comment: string | null;
+    response?: string | null;
+    respondedAt?: string | null;
     createdAt: string;
     updatedAt: string;
     client?: User;

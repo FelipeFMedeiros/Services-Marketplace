@@ -77,20 +77,46 @@ export interface UpdateVariationRequest {
 
 export interface ServicesSearchParams {
     serviceTypeId?: number;
-    providerId?: number;
-    location?: string;
+    city?: string;
+    state?: string;
+    search?: string;
     minPrice?: number;
     maxPrice?: number;
-    isActive?: boolean;
+    sortBy?: 'recent' | 'price_asc' | 'price_desc';
+    page?: number;
+    limit?: number;
 }
 
 export interface ServicesResponse {
-    services: Service[];
+    services: (Service & {
+        priceRange?: {
+            min: number;
+            max: number;
+        };
+    })[];
+    pagination?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+    };
 }
 
-export interface ServiceResponse {
-    service: Service;
-}
+export type ServiceResponse = Service & {
+    reviewStatistics?: {
+        averageRating: number;
+        totalReviews: number;
+        ratingDistribution: {
+            1: number;
+            2: number;
+            3: number;
+            4: number;
+            5: number;
+        };
+    };
+};
 
 export interface VariationResponse {
     variation: ServiceVariation;

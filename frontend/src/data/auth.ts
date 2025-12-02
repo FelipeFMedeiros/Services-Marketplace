@@ -21,6 +21,8 @@ export interface Provider {
     bio: string | null;
     rating: number;
     totalReviews: number;
+    city: string | null;
+    state: string | null;
     user?: User;
 }
 

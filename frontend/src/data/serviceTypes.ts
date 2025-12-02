@@ -15,11 +15,18 @@ export interface ServiceType {
 }
 
 export interface ServiceTypesResponse {
-    serviceTypes: ServiceType[];
+    success: boolean;
+    data: {
+        serviceTypes: ServiceType[];
+        total: number;
+    };
 }
 
 export interface ServiceTypeResponse {
-    serviceType: ServiceType;
+    success: boolean;
+    data: {
+        serviceType: ServiceType;
+    };
 }
 
 // ===== SERVICE TYPES API =====
@@ -30,7 +37,7 @@ export const serviceTypesApi = {
      */
     getAll: async (): Promise<ServiceTypesResponse> => {
         const response = await api.get('/service-types');
-        return response.data;
+        return response.data; // Backend retorna { success, data: { serviceTypes, total } }
     },
 
     /**
@@ -38,6 +45,6 @@ export const serviceTypesApi = {
      */
     getById: async (id: number): Promise<ServiceTypeResponse> => {
         const response = await api.get(`/service-types/${id}`);
-        return response.data;
+        return response.data; // Backend retorna { success, data: { serviceType } }
     },
 };
