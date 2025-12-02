@@ -9,12 +9,13 @@ Este guia explica como usar Docker neste projeto.
 
 ## 🏗️ Estrutura dos Containers
 
-O projeto usa 4 containers principais:
+O projeto usa 5 containers principais:
 
 1. **mysql**: Banco de dados MySQL 8.0
 2. **redis**: Cache Redis 7
 3. **elasticsearch**: Motor de busca Elasticsearch 8.11
 4. **backend**: API Node.js + Express
+5. **frontend**: Frontend React + Vite
 
 ## 🚀 Comandos Básicos
 
@@ -79,6 +80,7 @@ docker exec -it services-marketplace-backend npm run studio
 
 - **3000**: Backend API
 - **3306**: MySQL
+- **5173**: Frontend React + Vite
 - **6379**: Redis
 - **9200**: Elasticsearch HTTP
 - **9300**: Elasticsearch Transport

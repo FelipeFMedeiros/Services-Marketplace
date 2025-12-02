@@ -51,7 +51,7 @@ src/
 
 ### API
 - **GET** `/api` - Informações da API
-- **GET** `/api/test` - Endpoint de teste
+- **GET** `/docs` - Documentação da API
 
 ## 🔧 Desenvolvimento
 
@@ -61,7 +61,7 @@ Para iniciar o servidor em modo desenvolvimento:
 npm run dev
 ```
 
-O servidor estará disponível em `http://localhost:3001`
+O servidor estará disponível em `http://localhost:3000`
 
 ## 🚀 Produção
 
@@ -79,7 +79,7 @@ O servidor estará disponível em `http://localhost:3001`
 
 | Variável | Descrição | Valor Padrão |
 |----------|-----------|--------------|
-| PORT | Porta do servidor | 3001 |
+| PORT | Porta do servidor | 3000 |
 | NODE_ENV | Ambiente de execução | development |
 | DB_HOST | Host do banco de dados | localhost |
 | DB_PORT | Porta do banco de dados | 3306 |
@@ -87,5 +87,4 @@ O servidor estará disponível em `http://localhost:3001`
 | DB_PASSWORD | Senha do banco de dados | admin |
 | DB_NAME | Nome do banco de dados | services_marketplace |
 | JWT_SECRET | Chave secreta do JWT | - |
-| JWT_EXPIRES_IN | Tempo de expiração do JWT | 1d |
 | FRONTEND_URL | URL do frontend | http://localhost:3000 |
