@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '@/lib/api';
+import { authApi } from '@/data/api';
 import { useState } from 'react';
 
 const loginSchema = z.object({
@@ -28,7 +28,7 @@ function Login() {
     const onSubmit = async (data: LoginFormData) => {
         try {
             setErrorMessage('');
-            await authApi.login(data.email, data.password);
+            await authApi.login({ email: data.email, password: data.password });
             navigate('/');
         } catch (error: unknown) {
             const axiosError = error as { response?: { data?: { message?: string } } };

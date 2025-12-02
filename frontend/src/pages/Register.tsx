@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { UserPlus, Mail, Lock, User, Phone, MapPin, Building2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '@/lib/api';
+import { authApi } from '@/data/api';
 
 // Schema para Etapa 1 - Informações Básicas
 const step1Schema = z.object({
