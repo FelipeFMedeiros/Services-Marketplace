@@ -3,6 +3,7 @@ import authRoutes from './auth';
 import serviceTypeRoutes from './serviceTypes';
 import providerRoutes from './providers';
 import serviceRoutes from './services';
+import bookingRoutes from './bookings';
 import { generalLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
@@ -18,6 +19,9 @@ router.use('/providers', providerRoutes);
 
 // Rotas de serviços
 router.use('/services', serviceRoutes);
+
+// Rotas de contratações/agendamentos
+router.use('/bookings', bookingRoutes);
 
 // Rota raiz para checagem rápida da API
 router.get('/', generalLimiter, (req, res) => {
@@ -46,6 +50,12 @@ router.get('/', generalLimiter, (req, res) => {
         search: 'GET /api/providers/search (público, filtros: city, state, serviceTypeId, search, sortBy)',
         updateProfile: 'PUT /api/providers/profile',
         getById: 'GET /api/providers/:id',
+        dashboard: {
+          bookings: 'GET /api/providers/bookings (PROVIDER)',
+          stats: 'GET /api/providers/dashboard/stats (PROVIDER)',
+          notifications: 'GET /api/providers/notifications (PROVIDER)',
+          markNotificationRead: 'PATCH /api/providers/notifications/:id/read (PROVIDER)'
+        },
         availabilities: {
           create: 'POST /api/providers/availabilities',
           list: 'GET /api/providers/availabilities (PROVIDER)',
@@ -71,6 +81,12 @@ router.get('/', generalLimiter, (req, res) => {
           setCover: 'PUT /api/services/:id/photos/:photoId/cover',
           delete: 'DELETE /api/services/:id/photos/:photoId'
         }
+      },
+      bookings: {
+        create: 'POST /api/bookings (CLIENT)',
+        my: 'GET /api/bookings/my (CLIENT)',
+        getById: 'GET /api/bookings/:id (cliente ou prestador)',
+        cancel: 'PATCH /api/bookings/:id/cancel (CLIENT)'
       }
     }
   });

@@ -276,3 +276,443 @@ export async function searchProviders(req: Request, res: Response): Promise<void
     });
   }
 }
+
+/**
+ * GET /api/providers/bookings
+ * Listar agendamentos/contratações recebidas pelo prestador
+ * Apenas PROVIDER autenticado
+ */
+export async function getProviderBookings(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const { status, startDate, endDate, page = '1', limit = '20' } = req.query;
+
+    // Buscar provider do usuário
+    const provider = await prisma.provider.findUnique({
+      where: { user_id: userId }
+    });
+
+    if (!provider) {
+      res.status(404).json({
+        success: false,
+        message: 'Perfil de prestador não encontrado'
+      });
+      return;
+    }
+
+    // Construir filtro
+    const where: any = {
+      provider_id: provider.id
+    };
+
+    // Filtrar por status
+    if (status) {
+      where.status = status as string;
+    }
+
+    // Filtrar por período
+    if (startDate || endDate) {
+      where.AND = [];
+      
+      if (startDate) {
+        where.AND.push({
+          start_datetime: { gte: new Date(startDate as string) }
+        });
+      }
+      
+      if (endDate) {
+        where.AND.push({
+          start_datetime: { lte: new Date(endDate as string) }
+        });
+      }
+    }
+
+    // Paginação
+    const pageNum = parseInt(page as string);
+    const limitNum = Math.min(parseInt(limit as string), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Buscar agendamentos
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where,
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true
+            }
+          },
+          service: {
+            select: {
+              id: true,
+              title: true,
+              description: true
+            }
+          },
+          serviceVariation: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              duration_minutes: true
+            }
+          }
+        },
+        orderBy: {
+          start_datetime: 'asc'
+        },
+        skip,
+        take: limitNum
+      }),
+      prisma.booking.count({ where })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        bookings,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+          hasNext: pageNum < Math.ceil(total / limitNum),
+          hasPrev: pageNum > 1
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar agendamentos do prestador:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar agendamentos'
+    });
+  }
+}
+
+/**
+ * GET /api/providers/dashboard/stats
+ * Estatísticas e métricas do prestador
+ * Apenas PROVIDER autenticado
+ */
+export async function getProviderStats(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+
+    // Buscar provider do usuário
+    const provider = await prisma.provider.findUnique({
+      where: { user_id: userId }
+    });
+
+    if (!provider) {
+      res.status(404).json({
+        success: false,
+        message: 'Perfil de prestador não encontrado'
+      });
+      return;
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+
+    // Buscar estatísticas em paralelo
+    const [
+      totalBookings,
+      pendingBookings,
+      approvedBookings,
+      completedBookings,
+      cancelledBookings,
+      monthlyBookings,
+      weeklyBookings,
+      upcomingBookings,
+      totalRevenue,
+      monthlyRevenue
+    ] = await Promise.all([
+      // Total de agendamentos
+      prisma.booking.count({
+        where: { provider_id: provider.id }
+      }),
+      
+      // Por status
+      prisma.booking.count({
+        where: { provider_id: provider.id, status: 'PENDING' }
+      }),
+      prisma.booking.count({
+        where: { provider_id: provider.id, status: 'APPROVED' }
+      }),
+      prisma.booking.count({
+        where: { provider_id: provider.id, status: 'COMPLETED' }
+      }),
+      prisma.booking.count({
+        where: { provider_id: provider.id, status: 'CANCELLED' }
+      }),
+      
+      // Agendamentos do mês
+      prisma.booking.count({
+        where: {
+          provider_id: provider.id,
+          created_at: { gte: startOfMonth }
+        }
+      }),
+      
+      // Agendamentos da semana
+      prisma.booking.count({
+        where: {
+          provider_id: provider.id,
+          created_at: { gte: startOfWeek }
+        }
+      }),
+      
+      // Próximos agendamentos (futuro, aprovados)
+      prisma.booking.findMany({
+        where: {
+          provider_id: provider.id,
+          status: 'APPROVED',
+          start_datetime: { gte: now }
+        },
+        include: {
+          client: {
+            select: {
+              name: true,
+              phone: true
+            }
+          },
+          service: {
+            select: {
+              title: true
+            }
+          },
+          serviceVariation: {
+            select: {
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          start_datetime: 'asc'
+        },
+        take: 5
+      }),
+      
+      // Receita total (completed)
+      prisma.booking.aggregate({
+        where: {
+          provider_id: provider.id,
+          status: 'COMPLETED'
+        },
+        _sum: {
+          price_at_booking: true
+        }
+      }),
+      
+      // Receita do mês (completed)
+      prisma.booking.aggregate({
+        where: {
+          provider_id: provider.id,
+          status: 'COMPLETED',
+          created_at: { gte: startOfMonth }
+        },
+        _sum: {
+          price_at_booking: true
+        }
+      })
+    ]);
+
+    // Contar notificações não lidas
+    const unreadNotifications = await prisma.notification.count({
+      where: {
+        provider_id: provider.id,
+        is_read: false
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        bookings: {
+          total: totalBookings,
+          pending: pendingBookings,
+          approved: approvedBookings,
+          completed: completedBookings,
+          cancelled: cancelledBookings,
+          thisMonth: monthlyBookings,
+          thisWeek: weeklyBookings
+        },
+        revenue: {
+          total: totalRevenue._sum.price_at_booking || 0,
+          thisMonth: monthlyRevenue._sum.price_at_booking || 0
+        },
+        upcoming: upcomingBookings,
+        notifications: {
+          unread: unreadNotifications
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas do prestador:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar estatísticas'
+    });
+  }
+}
+
+/**
+ * GET /api/providers/notifications
+ * Listar notificações do prestador
+ * Apenas PROVIDER autenticado
+ */
+export async function getProviderNotifications(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const { isRead, page = '1', limit = '20' } = req.query;
+
+    // Buscar provider do usuário
+    const provider = await prisma.provider.findUnique({
+      where: { user_id: userId }
+    });
+
+    if (!provider) {
+      res.status(404).json({
+        success: false,
+        message: 'Perfil de prestador não encontrado'
+      });
+      return;
+    }
+
+    // Construir filtro
+    const where: any = {
+      provider_id: provider.id
+    };
+
+    if (isRead !== undefined) {
+      where.is_read = isRead === 'true';
+    }
+
+    // Paginação
+    const pageNum = parseInt(page as string);
+    const limitNum = Math.min(parseInt(limit as string), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Buscar notificações
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        include: {
+          booking: {
+            include: {
+              client: {
+                select: {
+                  name: true
+                }
+              },
+              service: {
+                select: {
+                  title: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        skip,
+        take: limitNum
+      }),
+      prisma.notification.count({ where })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        notifications,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+          hasNext: pageNum < Math.ceil(total / limitNum),
+          hasPrev: pageNum > 1
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar notificações:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar notificações'
+    });
+  }
+}
+
+/**
+ * PATCH /api/providers/notifications/:id/read
+ * Marcar notificação como lida
+ * Apenas PROVIDER autenticado
+ */
+export async function markNotificationAsRead(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+
+    // Buscar provider do usuário
+    const provider = await prisma.provider.findUnique({
+      where: { user_id: userId }
+    });
+
+    if (!provider) {
+      res.status(404).json({
+        success: false,
+        message: 'Perfil de prestador não encontrado'
+      });
+      return;
+    }
+
+    // Verificar se a notificação existe e pertence ao prestador
+    const notification = await prisma.notification.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!notification) {
+      res.status(404).json({
+        success: false,
+        message: 'Notificação não encontrada'
+      });
+      return;
+    }
+
+    if (notification.provider_id !== provider.id) {
+      res.status(403).json({
+        success: false,
+        message: 'Você não tem permissão para marcar esta notificação'
+      });
+      return;
+    }
+
+    // Marcar como lida
+    const updatedNotification = await prisma.notification.update({
+      where: { id: parseInt(id) },
+      data: { is_read: true }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Notificação marcada como lida',
+      data: {
+        notification: updatedNotification
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao marcar notificação:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao marcar notificação'
+    });
+  }
+}

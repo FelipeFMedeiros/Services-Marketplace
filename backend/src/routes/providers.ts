@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { updateProviderProfile, getProviderById, searchProviders } from '../controllers/providerController';
+import { 
+  updateProviderProfile, 
+  getProviderById, 
+  searchProviders,
+  getProviderBookings,
+  getProviderStats,
+  getProviderNotifications,
+  markNotificationAsRead
+} from '../controllers/providerController';
 import {
   createAvailability,
   getMyAvailabilities,
@@ -156,49 +164,6 @@ router.put('/profile', authenticate, authorize('PROVIDER'), createLimiter, updat
  *                           type: boolean
  */
 router.get('/search', generalLimiter, searchProviders);
-
-/**
- * @openapi
- * /api/providers/{id}:
- *   get:
- *     tags:
- *       - Providers
- *     summary: Buscar perfil público de prestador
- *     description: Retorna informações públicas de um prestador e seus serviços
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID do prestador
- *     responses:
- *       200:
- *         description: Dados do prestador
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     provider:
- *                       allOf:
- *                         - $ref: '#/components/schemas/Provider'
- *                         - type: object
- *                           properties:
- *                             services:
- *                               type: array
- *                               items:
- *                                 type: object
- *       404:
- *         description: Prestador não encontrado
- */
-router.get('/:id', generalLimiter, getProviderById);
 
 // ============================================
 // PROVIDER AVAILABILITIES ROUTES
@@ -468,10 +433,271 @@ router.delete('/availabilities/:id', authenticate, authorize('PROVIDER'), create
 router.get('/:id/available-slots', generalLimiter, getAvailableSlots);
 
 // ============================================
+// PROVIDER DASHBOARD & BOOKINGS
+// ⚠️ IMPORTANTE: Rotas específicas DEVEM vir ANTES de /:id
+// ============================================
+
+/**
+ * @openapi
+ * /api/providers/bookings:
+ *   get:
+ *     tags:
+ *       - Provider Dashboard
+ *     summary: Listar agendamentos recebidos
+ *     description: Prestador visualiza todas as contratações/agendamentos recebidos
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, APPROVED, CANCELLED, COMPLETED]
+ *         description: Filtrar por status
+ *         example: "APPROVED"
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Agendamentos a partir de
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Agendamentos até
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *     responses:
+ *       200:
+ *         description: Lista de agendamentos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     bookings:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Apenas PROVIDER
+ */
+router.get('/bookings', authenticate, authorize('PROVIDER'), generalLimiter, getProviderBookings);
+
+/**
+ * @openapi
+ * /api/providers/dashboard/stats:
+ *   get:
+ *     tags:
+ *       - Provider Dashboard
+ *     summary: Estatísticas do prestador
+ *     description: Retorna métricas e estatísticas do prestador (agendamentos, receita, próximos eventos)
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Estatísticas do prestador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     bookings:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         pending:
+ *                           type: integer
+ *                         approved:
+ *                           type: integer
+ *                         completed:
+ *                           type: integer
+ *                         cancelled:
+ *                           type: integer
+ *                         thisMonth:
+ *                           type: integer
+ *                         thisWeek:
+ *                           type: integer
+ *                     revenue:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: number
+ *                         thisMonth:
+ *                           type: number
+ *                     upcoming:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     notifications:
+ *                       type: object
+ *                       properties:
+ *                         unread:
+ *                           type: integer
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Apenas PROVIDER
+ */
+router.get('/dashboard/stats', authenticate, authorize('PROVIDER'), generalLimiter, getProviderStats);
+
+/**
+ * @openapi
+ * /api/providers/notifications:
+ *   get:
+ *     tags:
+ *       - Provider Dashboard
+ *     summary: Listar notificações
+ *     description: Retorna notificações do prestador (novas contratações, cancelamentos, etc)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: isRead
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar por lidas/não lidas
+ *         example: false
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *     responses:
+ *       200:
+ *         description: Lista de notificações
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     notifications:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Apenas PROVIDER
+ */
+router.get('/notifications', authenticate, authorize('PROVIDER'), generalLimiter, getProviderNotifications);
+
+/**
+ * @openapi
+ * /api/providers/notifications/{id}/read:
+ *   patch:
+ *     tags:
+ *       - Provider Dashboard
+ *     summary: Marcar notificação como lida
+ *     description: Marca uma notificação específica como lida
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da notificação
+ *     responses:
+ *       200:
+ *         description: Notificação marcada como lida
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Não autorizado
+ *       404:
+ *         description: Notificação não encontrada
+ */
+router.patch('/notifications/:id/read', authenticate, authorize('PROVIDER'), createLimiter, markNotificationAsRead);
+
+// ============================================
 // PROVIDER PUBLIC PROFILE
 // ⚠️ IMPORTANTE: Esta rota com /:id DEVE vir POR ÚLTIMO
 // para não capturar rotas específicas como /availabilities
 // ============================================
+
+/**
+ * @openapi
+ * /api/providers/{id}:
+ *   get:
+ *     tags:
+ *       - Providers
+ *     summary: Buscar perfil público de prestador
+ *     description: Retorna informações públicas de um prestador e seus serviços
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do prestador
+ *     responses:
+ *       200:
+ *         description: Dados do prestador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     provider:
+ *                       allOf:
+ *                         - $ref: '#/components/schemas/Provider'
+ *                         - type: object
+ *                           properties:
+ *                             services:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *       404:
+ *         description: Prestador não encontrado
+ */
+router.get('/:id', generalLimiter, getProviderById);
 
 /**
  * @openapi
