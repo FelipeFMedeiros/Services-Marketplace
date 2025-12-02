@@ -4,6 +4,7 @@ import serviceTypeRoutes from './serviceTypes';
 import providerRoutes from './providers';
 import serviceRoutes from './services';
 import bookingRoutes from './bookings';
+import reviewRoutes from './reviews';
 import { generalLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
@@ -22,6 +23,9 @@ router.use('/services', serviceRoutes);
 
 // Rotas de contratações/agendamentos
 router.use('/bookings', bookingRoutes);
+
+// Rotas de avaliações
+router.use('/reviews', reviewRoutes);
 
 // Rota raiz para checagem rápida da API
 router.get('/', generalLimiter, (req, res) => {
@@ -87,6 +91,14 @@ router.get('/', generalLimiter, (req, res) => {
         my: 'GET /api/bookings/my (CLIENT)',
         getById: 'GET /api/bookings/:id (cliente ou prestador)',
         cancel: 'PATCH /api/bookings/:id/cancel (CLIENT)'
+      },
+      reviews: {
+        create: 'POST /api/reviews (CLIENT, apenas bookings COMPLETED)',
+        my: 'GET /api/reviews/my (CLIENT)',
+        getById: 'GET /api/reviews/:id (público)',
+        update: 'PUT /api/reviews/:id (CLIENT dono)',
+        delete: 'DELETE /api/reviews/:id (CLIENT dono)',
+        getServiceReviews: 'GET /api/reviews/service/:serviceId (público, estatísticas incluídas)'
       }
     }
   });

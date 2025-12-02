@@ -374,9 +374,24 @@ export async function getServiceById(req: Request, res: Response) {
             created_at: 'desc'
           }
         },
+        reviews: {
+          take: 5, // Últimas 5 avaliações
+          orderBy: {
+            created_at: 'desc'
+          },
+          include: {
+            client: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
         _count: {
           select: {
-            bookings: true
+            bookings: true,
+            reviews: true
           }
         }
       }
@@ -388,7 +403,40 @@ export async function getServiceById(req: Request, res: Response) {
       });
     }
 
-    return res.json(service);
+    // Calcular estatísticas de avaliações
+    const reviewStats = await prisma.review.groupBy({
+      by: ['rating'],
+      where: { service_id: parseInt(id) },
+      _count: {
+        rating: true
+      }
+    });
+
+    const totalReviews = reviewStats.reduce((sum, stat) => sum + stat._count.rating, 0);
+    const sumRatings = reviewStats.reduce((sum, stat) => sum + (stat.rating * stat._count.rating), 0);
+    const averageRating = totalReviews > 0 ? sumRatings / totalReviews : 0;
+
+    // Criar distribuição de estrelas
+    const ratingDistribution = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0
+    };
+
+    reviewStats.forEach(stat => {
+      ratingDistribution[stat.rating as keyof typeof ratingDistribution] = stat._count.rating;
+    });
+
+    return res.json({
+      ...service,
+      reviewStatistics: {
+        averageRating: parseFloat(averageRating.toFixed(2)),
+        totalReviews,
+        ratingDistribution
+      }
+    });
 
   } catch (error) {
     console.error('Erro ao buscar serviço:', error);
