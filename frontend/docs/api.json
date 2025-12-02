@@ -1,0 +1,3248 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Services Marketplace API",
+    "version": "1.0.0",
+    "description": "API para marketplace de serviços de profissionais liberais",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Servidor de Desenvolvimento"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "auth_token",
+        "description": "JWT token em httpOnly cookie"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "João Silva"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "joao@exemplo.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "11987654321"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "CLIENT",
+              "PROVIDER",
+              "ADMIN"
+            ],
+            "example": "CLIENT"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "bio": {
+            "type": "string",
+            "example": "Profissional com 20 anos de experiência"
+          },
+          "document": {
+            "type": "string",
+            "example": "12345678900"
+          },
+          "city": {
+            "type": "string",
+            "example": "São Paulo"
+          },
+          "state": {
+            "type": "string",
+            "example": "SP"
+          }
+        }
+      },
+      "ServiceType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Beleza e Estética"
+          },
+          "description": {
+            "type": "string",
+            "example": "Serviços de manicure, pedicure, etc."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Erro ao processar requisição"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operação realizada com sucesso"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Autenticação e gerenciamento de usuários"
+    },
+    {
+      "name": "Service Types",
+      "description": "Tipos de serviço disponíveis"
+    },
+    {
+      "name": "Services",
+      "description": "Gerenciamento de serviços dos prestadores"
+    },
+    {
+      "name": "Bookings",
+      "description": "Contratações e reservas"
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Registrar novo usuário",
+        "description": "Cria uma nova conta de usuário (cliente ou prestador)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "João Silva"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "joao@exemplo.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "senha123"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "11987654321"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "CLIENT",
+                      "PROVIDER"
+                    ],
+                    "default": "CLIENT",
+                    "example": "CLIENT"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuário criado com sucesso",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "example": "auth_token=eyJhbGc...; Path=/; HttpOnly"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Usuário registrado com sucesso!"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "409": {
+            "description": "Email já cadastrado"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Fazer login",
+        "description": "Autentica um usuário e retorna JWT em httpOnly cookie",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "maria@exemplo.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "senha123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login realizado com sucesso",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "example": "auth_token=eyJhbGc...; Path=/; HttpOnly"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login realizado com sucesso!"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email ou senha incorretos"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Fazer logout",
+        "description": "Remove o cookie de autenticação",
+        "responses": {
+          "200": {
+            "description": "Logout realizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logout realizado com sucesso!"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Obter dados do usuário autenticado",
+        "description": "Retorna informações do usuário atualmente logado",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados do usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/User"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "provider": {
+                                  "$ref": "#/components/schemas/Provider",
+                                  "nullable": true
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "404": {
+            "description": "Usuário não encontrado"
+          }
+        }
+      }
+    },
+    "/api/bookings": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Criar contratação/agendamento",
+        "description": "Cliente contrata um serviço escolhendo variação e horário (requer autenticação CLIENT)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "serviceId",
+                  "variationId",
+                  "startDatetime"
+                ],
+                "properties": {
+                  "serviceId": {
+                    "type": "integer",
+                    "example": 1,
+                    "description": "ID do serviço a contratar"
+                  },
+                  "variationId": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID da variação escolhida"
+                  },
+                  "startDatetime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-12-15T14:00:00",
+                    "description": "Data/hora de início (ISO 8601)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contratação criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Contratação realizada com sucesso!"
+                    },
+                    "booking": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "start_datetime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "end_datetime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "price_at_booking": {
+                          "type": "number"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "APPROVED",
+                            "CANCELLED",
+                            "COMPLETED"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos, horário indisponível ou sobreposição"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas CLIENTs podem contratar"
+          },
+          "404": {
+            "description": "Serviço ou variação não encontrados"
+          }
+        }
+      }
+    },
+    "/api/bookings/my": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Listar minhas contratações",
+        "description": "Cliente visualiza suas próprias contratações com filtros",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "CANCELLED",
+                "COMPLETED"
+              ]
+            },
+            "description": "Filtrar por status",
+            "example": "APPROVED"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filtrar contratações a partir desta data"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filtrar contratações até esta data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de contratações do cliente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "bookings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas CLIENTs"
+          }
+        }
+      }
+    },
+    "/api/bookings/{id}": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Buscar detalhes de uma contratação",
+        "description": "Visualiza detalhes completos (apenas cliente ou prestador envolvidos)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da contratação"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes da contratação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "booking": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Sem permissão (não é cliente nem prestador desta contratação)"
+          },
+          "404": {
+            "description": "Contratação não encontrada"
+          }
+        }
+      }
+    },
+    "/api/bookings/{id}/cancel": {
+      "patch": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Cancelar contratação",
+        "description": "Cliente cancela sua própria contratação (apenas PENDING ou APPROVED)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da contratação"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "example": "Imprevisto, não poderei comparecer",
+                    "description": "Motivo do cancelamento (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contratação cancelada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Contratação cancelada com sucesso"
+                    },
+                    "booking": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Já cancelada ou já concluída"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não é o dono da contratação"
+          },
+          "404": {
+            "description": "Contratação não encontrada"
+          }
+        }
+      }
+    },
+    "/api/providers/profile": {
+      "put": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Atualizar perfil do prestador",
+        "description": "Atualiza informações do perfil do prestador autenticado",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bio": {
+                    "type": "string",
+                    "example": "Profissional com 20 anos de experiência em manicure e pedicure."
+                  },
+                  "document": {
+                    "type": "string",
+                    "example": "12345678900"
+                  },
+                  "city": {
+                    "type": "string",
+                    "example": "São Paulo"
+                  },
+                  "state": {
+                    "type": "string",
+                    "example": "SP"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil atualizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Perfil atualizado com sucesso!"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "provider": {
+                          "$ref": "#/components/schemas/Provider"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas prestadores podem atualizar"
+          },
+          "404": {
+            "description": "Perfil não encontrado"
+          }
+        }
+      }
+    },
+    "/api/providers/search": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Buscar prestadores (público)",
+        "description": "Busca prestadores com filtros de localização, tipo de serviço e ordenação",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por cidade",
+            "example": "São Paulo"
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por estado (sigla)",
+            "example": "SP"
+          },
+          {
+            "in": "query",
+            "name": "serviceTypeId",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar prestadores que oferecem este tipo de serviço",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Buscar por nome do prestador ou bio",
+            "example": "manicure"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "services_count",
+                "recent"
+              ]
+            },
+            "description": "Ordenação (services_count = mais serviços, recent = mais recentes)",
+            "example": "services_count"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Número da página"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Itens por página (máximo 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de prestadores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "providers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            },
+                            "hasNext": {
+                              "type": "boolean"
+                            },
+                            "hasPrev": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/availabilities": {
+      "post": {
+        "tags": [
+          "Provider Availabilities"
+        ],
+        "summary": "Criar bloco de disponibilidade",
+        "description": "Prestador cria um período de disponibilidade para agendamentos",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "startDatetime",
+                  "endDatetime"
+                ],
+                "properties": {
+                  "startDatetime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-12-15T08:00:00",
+                    "description": "Data/hora de início (ISO 8601)"
+                  },
+                  "endDatetime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-12-15T18:00:00",
+                    "description": "Data/hora de fim (ISO 8601)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Disponibilidade criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "availability": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos ou período com sobreposição"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas PROVIDER pode criar"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Provider Availabilities"
+        ],
+        "summary": "Listar minhas disponibilidades",
+        "description": "Retorna todas as disponibilidades do prestador autenticado",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filtrar por ativas ou inativas",
+            "example": true
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filtrar disponibilidades a partir desta data"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filtrar disponibilidades até esta data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de disponibilidades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "availabilities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas PROVIDER"
+          }
+        }
+      }
+    },
+    "/api/providers/availabilities/{id}": {
+      "put": {
+        "tags": [
+          "Provider Availabilities"
+        ],
+        "summary": "Atualizar disponibilidade",
+        "description": "Atualiza período ou status de disponibilidade (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da disponibilidade"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startDatetime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-12-15T09:00:00"
+                  },
+                  "endDatetime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-12-15T17:00:00"
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Disponibilidade atualizada"
+          },
+          "400": {
+            "description": "Dados inválidos ou sobreposição"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Disponibilidade não encontrada"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Provider Availabilities"
+        ],
+        "summary": "Deletar disponibilidade",
+        "description": "Remove permanentemente uma disponibilidade (não permite se houver bookings)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da disponibilidade"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disponibilidade deletada"
+          },
+          "400": {
+            "description": "Há agendamentos confirmados neste período"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Disponibilidade não encontrada"
+          }
+        }
+      }
+    },
+    "/api/providers/{id}/available-slots": {
+      "get": {
+        "tags": [
+          "Provider Availabilities"
+        ],
+        "summary": "Buscar slots disponíveis (público)",
+        "description": "Retorna períodos livres de um prestador para clientes agendarem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do prestador"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Data inicial para buscar slots",
+            "example": "2025-12-15T00:00:00"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Data final para buscar slots",
+            "example": "2025-12-20T23:59:59"
+          },
+          {
+            "in": "query",
+            "name": "durationMinutes",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Duração mínima do slot em minutos (filtra slots menores)",
+            "example": 60
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Slots disponíveis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "period": {
+                      "type": "object",
+                      "properties": {
+                        "start": {
+                          "type": "string"
+                        },
+                        "end": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "availableSlots": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "end": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "durationMinutes": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "totalSlots": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros inválidos"
+          },
+          "404": {
+            "description": "Prestador não encontrado"
+          }
+        }
+      }
+    },
+    "/api/providers/bookings": {
+      "get": {
+        "tags": [
+          "Provider Dashboard"
+        ],
+        "summary": "Listar agendamentos recebidos",
+        "description": "Prestador visualiza todas as contratações/agendamentos recebidos",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "CANCELLED",
+                "COMPLETED"
+              ]
+            },
+            "description": "Filtrar por status",
+            "example": "APPROVED"
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Agendamentos a partir de"
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Agendamentos até"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de agendamentos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "bookings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas PROVIDER"
+          }
+        }
+      }
+    },
+    "/api/providers/dashboard/stats": {
+      "get": {
+        "tags": [
+          "Provider Dashboard"
+        ],
+        "summary": "Estatísticas do prestador",
+        "description": "Retorna métricas e estatísticas do prestador (agendamentos, receita, próximos eventos)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estatísticas do prestador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "bookings": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "pending": {
+                              "type": "integer"
+                            },
+                            "approved": {
+                              "type": "integer"
+                            },
+                            "completed": {
+                              "type": "integer"
+                            },
+                            "cancelled": {
+                              "type": "integer"
+                            },
+                            "thisMonth": {
+                              "type": "integer"
+                            },
+                            "thisWeek": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "revenue": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "number"
+                            },
+                            "thisMonth": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "upcoming": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "notifications": {
+                          "type": "object",
+                          "properties": {
+                            "unread": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas PROVIDER"
+          }
+        }
+      }
+    },
+    "/api/providers/notifications": {
+      "get": {
+        "tags": [
+          "Provider Dashboard"
+        ],
+        "summary": "Listar notificações",
+        "description": "Retorna notificações do prestador (novas contratações, cancelamentos, etc)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "isRead",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filtrar por lidas/não lidas",
+            "example": false
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de notificações",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notifications": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas PROVIDER"
+          }
+        }
+      }
+    },
+    "/api/providers/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "Provider Dashboard"
+        ],
+        "summary": "Marcar notificação como lida",
+        "description": "Marca uma notificação específica como lida",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da notificação"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notificação marcada como lida"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Notificação não encontrada"
+          }
+        }
+      }
+    },
+    "/api/providers/{id}": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Buscar perfil público de prestador",
+        "description": "Retorna informações públicas de um prestador e seus serviços",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do prestador"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados do prestador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "provider": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Provider"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "services": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prestador não encontrado"
+          }
+        }
+      }
+    },
+    "/api/reviews": {
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Criar avaliação",
+        "description": "Cliente cria avaliação para um serviço após agendamento COMPLETED (apenas CLIENT)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bookingId",
+                  "rating"
+                ],
+                "properties": {
+                  "bookingId": {
+                    "type": "integer",
+                    "example": 1,
+                    "description": "ID do agendamento (deve estar COMPLETED e pertencer ao cliente)"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 5,
+                    "description": "Avaliação de 1 a 5 estrelas"
+                  },
+                  "comment": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500,
+                    "example": "Excelente serviço! Muito atencioso e caprichoso. Recomendo!",
+                    "description": "Comentário opcional (10-500 caracteres)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Avaliação criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Avaliação criada com sucesso"
+                    },
+                    "review": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "rating": {
+                          "type": "integer"
+                        },
+                        "comment": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "client": {
+                          "type": "object"
+                        },
+                        "service": {
+                          "type": "object"
+                        },
+                        "booking": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos, booking não COMPLETED, ou já existe avaliação para este booking"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (apenas CLIENT) ou booking não pertence ao usuário"
+          },
+          "404": {
+            "description": "Agendamento não encontrado"
+          }
+        }
+      }
+    },
+    "/api/reviews/my": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Listar minhas avaliações",
+        "description": "Retorna todas as avaliações feitas pelo cliente autenticado (apenas CLIENT)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Número da página"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Itens por página (máximo 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de avaliações do cliente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reviews": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "rating": {
+                            "type": "integer"
+                          },
+                          "comment": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "service": {
+                            "type": "object"
+                          },
+                          "booking": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        },
+                        "hasNext": {
+                          "type": "boolean"
+                        },
+                        "hasPrev": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Apenas CLIENT pode acessar"
+          }
+        }
+      }
+    },
+    "/api/reviews/service/{serviceId}": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Listar avaliações de um serviço",
+        "description": "Retorna avaliações de um serviço com estatísticas (rota pública)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Número da página"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Itens por página (máximo 100)"
+          },
+          {
+            "in": "query",
+            "name": "minRating",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "Filtrar por rating mínimo"
+          },
+          {
+            "in": "query",
+            "name": "maxRating",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "Filtrar por rating máximo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de avaliações com estatísticas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reviews": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        },
+                        "hasNext": {
+                          "type": "boolean"
+                        },
+                        "hasPrev": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "statistics": {
+                      "type": "object",
+                      "properties": {
+                        "averageRating": {
+                          "type": "number",
+                          "format": "float",
+                          "example": 4.5,
+                          "description": "Média de avaliações (0-5)"
+                        },
+                        "totalReviews": {
+                          "type": "integer",
+                          "example": 42,
+                          "description": "Total de avaliações"
+                        },
+                        "ratingDistribution": {
+                          "type": "object",
+                          "properties": {
+                            "1": {
+                              "type": "integer",
+                              "example": 2
+                            },
+                            "2": {
+                              "type": "integer",
+                              "example": 3
+                            },
+                            "3": {
+                              "type": "integer",
+                              "example": 5
+                            },
+                            "4": {
+                              "type": "integer",
+                              "example": 12
+                            },
+                            "5": {
+                              "type": "integer",
+                              "example": 20
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews/{id}": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Buscar avaliação por ID",
+        "description": "Retorna detalhes de uma avaliação específica (rota pública)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da avaliação"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes da avaliação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "rating": {
+                      "type": "integer"
+                    },
+                    "comment": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "client": {
+                      "type": "object"
+                    },
+                    "service": {
+                      "type": "object"
+                    },
+                    "booking": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Avaliação não encontrada"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Atualizar avaliação",
+        "description": "Atualiza rating ou comentário de uma avaliação (apenas o dono CLIENT)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da avaliação"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 4
+                  },
+                  "comment": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500,
+                    "example": "Serviço muito bom, mas poderia ser mais rápido."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avaliação atualizada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Avaliação atualizada com sucesso"
+                    },
+                    "review": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (não é o dono)"
+          },
+          "404": {
+            "description": "Avaliação não encontrada"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Deletar avaliação",
+        "description": "Remove permanentemente uma avaliação (apenas o dono CLIENT)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da avaliação"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avaliação deletada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Avaliação deletada com sucesso"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (não é o dono)"
+          },
+          "404": {
+            "description": "Avaliação não encontrada"
+          }
+        }
+      }
+    },
+    "/api/services": {
+      "post": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Criar um novo serviço",
+        "description": "Permite que um prestador crie um novo serviço (apenas PROVIDER autenticado)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "description",
+                  "serviceTypeId"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "Corte de Cabelo Masculino"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500,
+                    "example": "Corte moderno com acabamento profissional e lavagem incluída"
+                  },
+                  "serviceTypeId": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "allowsMultipleDays": {
+                    "type": "boolean",
+                    "default": false,
+                    "example": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Serviço criado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Serviço criado com sucesso"
+                    },
+                    "service": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (apenas PROVIDER)"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Listar todos os serviços do marketplace",
+        "description": "Retorna lista paginada de serviços ativos com filtros avançados (rota pública)",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "serviceTypeId",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por tipo de serviço",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "city",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por cidade do prestador",
+            "example": "São Paulo"
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por estado do prestador (UF)",
+            "example": "SP"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Buscar no nome ou descrição do serviço",
+            "example": "corte cabelo"
+          },
+          {
+            "in": "query",
+            "name": "minPrice",
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "Preço mínimo (filtra variações)",
+            "example": 50
+          },
+          {
+            "in": "query",
+            "name": "maxPrice",
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "Preço máximo (filtra variações)",
+            "example": 200
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recent",
+                "price_asc",
+                "price_desc"
+              ]
+            },
+            "description": "Ordenação (recent = mais recentes, price_asc = menor preço, price_desc = maior preço)",
+            "example": "price_asc"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Número da página"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Itens por página (máximo 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de serviços com paginação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "services": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "priceRange": {
+                            "type": "object",
+                            "properties": {
+                              "min": {
+                                "type": "number"
+                              },
+                              "max": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 20
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 150
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 8
+                        },
+                        "hasNext": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "hasPrev": {
+                          "type": "boolean",
+                          "example": false
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/services/my": {
+      "get": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Listar meus serviços",
+        "description": "Retorna todos os serviços do prestador autenticado",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "active",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filtrar por serviços ativos ou inativos",
+            "example": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de serviços do prestador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "services": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (apenas PROVIDER)"
+          }
+        }
+      }
+    },
+    "/api/services/{id}": {
+      "get": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Buscar serviço por ID",
+        "description": "Retorna detalhes de um serviço específico (rota pública)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes do serviço",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Serviço não encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Atualizar serviço",
+        "description": "Permite que o prestador dono do serviço o atualize",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500
+                  },
+                  "serviceTypeId": {
+                    "type": "integer"
+                  },
+                  "allowsMultipleDays": {
+                    "type": "boolean"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Serviço atualizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Serviço atualizado com sucesso"
+                    },
+                    "service": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (não é o dono)"
+          },
+          "404": {
+            "description": "Serviço não encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Services"
+        ],
+        "summary": "Deletar serviço",
+        "description": "Desativa o serviço (soft delete) - apenas o dono pode deletar",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Serviço desativado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Serviço desativado com sucesso"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (não é o dono)"
+          },
+          "404": {
+            "description": "Serviço não encontrado"
+          }
+        }
+      }
+    },
+    "/api/services/{id}/variations": {
+      "post": {
+        "tags": [
+          "Service Variations"
+        ],
+        "summary": "Criar variação de serviço",
+        "description": "Adiciona uma nova variação de preço/duração ao serviço (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "price",
+                  "durationMinutes"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Básico"
+                  },
+                  "price": {
+                    "type": "number",
+                    "format": "decimal",
+                    "example": 50
+                  },
+                  "durationMinutes": {
+                    "type": "integer",
+                    "example": 30
+                  },
+                  "discountPercentage": {
+                    "type": "number",
+                    "format": "decimal",
+                    "example": 10
+                  },
+                  "discountDays": {
+                    "type": "string",
+                    "example": "monday,friday"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Variação criada com sucesso"
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado (não é o dono)"
+          },
+          "404": {
+            "description": "Serviço não encontrado"
+          }
+        }
+      }
+    },
+    "/api/services/{id}/variations/{variationId}": {
+      "put": {
+        "tags": [
+          "Service Variations"
+        ],
+        "summary": "Atualizar variação de serviço",
+        "description": "Atualiza uma variação existente (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          },
+          {
+            "in": "path",
+            "name": "variationId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da variação"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number",
+                    "format": "decimal"
+                  },
+                  "durationMinutes": {
+                    "type": "integer"
+                  },
+                  "discountPercentage": {
+                    "type": "number",
+                    "format": "decimal"
+                  },
+                  "discountDays": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Variação atualizada com sucesso"
+          },
+          "400": {
+            "description": "Dados inválidos"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Serviço ou variação não encontrada"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Service Variations"
+        ],
+        "summary": "Deletar variação de serviço",
+        "description": "Remove permanentemente uma variação (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          },
+          {
+            "in": "path",
+            "name": "variationId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da variação"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Variação deletada com sucesso"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Serviço ou variação não encontrada"
+          }
+        }
+      }
+    },
+    "/api/services/{id}/photos": {
+      "post": {
+        "tags": [
+          "Service Photos"
+        ],
+        "summary": "Upload de foto do serviço",
+        "description": "Faz upload de uma foto para o serviço no Cloudinary (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Arquivo de imagem (JPEG, PNG, WEBP, GIF - máx 5MB)"
+                  },
+                  "isCover": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Marcar como foto de capa"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Foto enviada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "photo": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "service_id": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "is_cover": {
+                          "type": "boolean"
+                        },
+                        "cloudinary_public_id": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Arquivo de imagem não fornecido ou tipo inválido"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Serviço não encontrado"
+          }
+        }
+      }
+    },
+    "/api/services/{id}/photos/{photoId}/cover": {
+      "put": {
+        "tags": [
+          "Service Photos"
+        ],
+        "summary": "Definir foto de capa",
+        "description": "Marca uma foto como capa do serviço (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          },
+          {
+            "in": "path",
+            "name": "photoId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da foto"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foto de capa atualizada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "photo": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "service_id": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "is_cover": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Serviço ou foto não encontrada"
+          }
+        }
+      }
+    },
+    "/api/services/{id}/photos/{photoId}": {
+      "delete": {
+        "tags": [
+          "Service Photos"
+        ],
+        "summary": "Deletar foto do serviço",
+        "description": "Remove permanentemente uma foto do serviço e do Cloudinary (apenas o dono)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do serviço"
+          },
+          {
+            "in": "path",
+            "name": "photoId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da foto"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foto deletada com sucesso"
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "403": {
+            "description": "Não autorizado"
+          },
+          "404": {
+            "description": "Serviço ou foto não encontrada"
+          }
+        }
+      }
+    },
+    "/api/service-types": {
+      "get": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Listar todos os tipos de serviço",
+        "description": "Retorna lista de tipos de serviço disponíveis no marketplace",
+        "responses": {
+          "200": {
+            "description": "Lista de tipos de serviço",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "serviceTypes": {
+                          "type": "array",
+                          "items": {
+                            "allOf": [
+                              {
+                                "$ref": "#/components/schemas/ServiceType"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "_count": {
+                                    "type": "object",
+                                    "properties": {
+                                      "services": {
+                                        "type": "integer",
+                                        "example": 5
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 10
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/service-types/{id}": {
+      "get": {
+        "tags": [
+          "Service Types"
+        ],
+        "summary": "Buscar tipo de serviço por ID",
+        "description": "Retorna detalhes de um tipo de serviço específico",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do tipo de serviço"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes do tipo de serviço",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "serviceType": {
+                          "$ref": "#/components/schemas/ServiceType"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tipo de serviço não encontrado"
+          }
+        }
+      }
+    }
+  }
+}
