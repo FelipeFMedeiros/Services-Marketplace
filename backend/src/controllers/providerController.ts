@@ -716,3 +716,134 @@ export async function markNotificationAsRead(req: Request, res: Response): Promi
     });
   }
 }
+
+/**
+ * PATCH /api/providers/bookings/:id/cancel
+ * Prestador cancela um agendamento
+ * Apenas PROVIDER autenticado
+ */
+export async function cancelProviderBooking(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    // Buscar provider do usuário
+    const provider = await prisma.provider.findUnique({
+      where: { user_id: userId }
+    });
+
+    if (!provider) {
+      res.status(404).json({
+        success: false,
+        message: 'Perfil de prestador não encontrado'
+      });
+      return;
+    }
+
+    // Buscar a contratação
+    const booking = await prisma.booking.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        service: {
+          select: {
+            title: true
+          }
+        },
+        serviceVariation: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!booking) {
+      res.status(404).json({
+        success: false,
+        message: 'Agendamento não encontrado'
+      });
+      return;
+    }
+
+    // Verificar se pertence ao prestador
+    if (booking.provider_id !== provider.id) {
+      res.status(403).json({
+        success: false,
+        message: 'Você não tem permissão para cancelar este agendamento'
+      });
+      return;
+    }
+
+    // Verificar se já está cancelada ou concluída
+    if (booking.status === 'CANCELLED') {
+      res.status(400).json({
+        success: false,
+        message: 'Este agendamento já foi cancelado'
+      });
+      return;
+    }
+
+    if (booking.status === 'COMPLETED') {
+      res.status(400).json({
+        success: false,
+        message: 'Não é possível cancelar um agendamento já concluído'
+      });
+      return;
+    }
+
+    // Atualizar status para CANCELLED
+    const updatedBooking = await prisma.booking.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'CANCELLED',
+        cancelled_at: new Date(),
+        cancellation_reason: reason || 'Cancelado pelo prestador'
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true
+          }
+        },
+        service: {
+          select: {
+            id: true,
+            title: true
+          }
+        },
+        serviceVariation: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            duration_minutes: true
+          }
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Agendamento cancelado com sucesso',
+      data: {
+        booking: updatedBooking
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao cancelar agendamento:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao cancelar agendamento'
+    });
+  }
+}

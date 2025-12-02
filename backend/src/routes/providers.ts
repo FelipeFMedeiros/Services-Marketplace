@@ -6,7 +6,8 @@ import {
   getProviderBookings,
   getProviderStats,
   getProviderNotifications,
-  markNotificationAsRead
+  markNotificationAsRead,
+  cancelProviderBooking
 } from '../controllers/providerController';
 import {
   createAvailability,
@@ -620,6 +621,59 @@ router.get('/dashboard/stats', authenticate, authorize('PROVIDER'), generalLimit
  *         description: Apenas PROVIDER
  */
 router.get('/notifications', authenticate, authorize('PROVIDER'), generalLimiter, getProviderNotifications);
+
+/**
+ * @openapi
+ * /api/providers/bookings/{id}/cancel:
+ *   patch:
+ *     tags:
+ *       - Provider Dashboard
+ *     summary: Cancelar agendamento
+ *     description: Prestador cancela um agendamento recebido (apenas PENDING ou APPROVED)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do agendamento
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 example: "Imprevisto, não poderei atender neste horário"
+ *                 description: Motivo do cancelamento (opcional)
+ *     responses:
+ *       200:
+ *         description: Agendamento cancelado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: "Agendamento cancelado com sucesso"
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Já cancelado ou já concluído
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Não pertence ao prestador
+ *       404:
+ *         description: Agendamento não encontrado
+ */
+router.patch('/bookings/:id/cancel', authenticate, authorize('PROVIDER'), createLimiter, cancelProviderBooking);
 
 /**
  * @openapi

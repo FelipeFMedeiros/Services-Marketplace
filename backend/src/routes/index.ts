@@ -56,6 +56,7 @@ router.get('/', generalLimiter, (req, res) => {
         getById: 'GET /api/providers/:id',
         dashboard: {
           bookings: 'GET /api/providers/bookings (PROVIDER)',
+          cancelBooking: 'PATCH /api/providers/bookings/:id/cancel (PROVIDER)',
           stats: 'GET /api/providers/dashboard/stats (PROVIDER)',
           notifications: 'GET /api/providers/notifications (PROVIDER)',
           markNotificationRead: 'PATCH /api/providers/notifications/:id/read (PROVIDER)'
